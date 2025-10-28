@@ -142,3 +142,34 @@ footer {
   padding: 20px;
   color: #666;
 }
+
+.participants-section {
+  margin-top: 12px;
+}
+
+.participants-heading {
+  margin-bottom: 8px;
+  color: #1a237e;
+}
+
+.participants-list {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin: 6px 0;
+  color: #333;
+}
+
+.participants-list li {
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #f7f9ff;
+  margin-bottom: 6px;
+  border: 1px solid #eef1ff;
+  font-size: 14px;
+}
+
+.participants-empty {
+  font-style: italic;
+  color: #666;
+  margin: 6px 0;
+}

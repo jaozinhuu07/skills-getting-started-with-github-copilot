@@ -20,11 +20,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build participants HTML: bullet list or empty message
+        const participantsHTML =
+          details.participants && details.participants.length
+            ? `<ul class="participants-list">
+                 ${details.participants.map((p) => `<li>${p}</li>`).join("")}
+               </ul>`
+            : `<p class="participants-empty">Nenhum participante inscrito</p>`;
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <p class="participants-heading"><strong>Participantes:</strong></p>
+            ${participantsHTML}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
