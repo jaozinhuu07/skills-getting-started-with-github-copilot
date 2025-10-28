@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      // Reset activity select (keep placeholder)
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -21,25 +23,82 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft = details.max_participants - details.participants.length;
 
         // Build participants HTML: bullet list or empty message
-        const participantsHTML =
-          details.participants && details.participants.length
-            ? `<ul class="participants-list">
-                 ${details.participants.map((p) => `<li>${p}</li>`).join("")}
-               </ul>`
-            : `<p class="participants-empty">Nenhum participante inscrito</p>`;
-
+        // Build the main card content (participants will be created with DOM nodes so we can attach handlers)
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p class="availability"><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-section">
             <p class="participants-heading"><strong>Participantes:</strong></p>
-            ${participantsHTML}
+            <!-- participants list will be appended here -->
           </div>
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Populate participants list with remove buttons
+        const participantsSection = activityCard.querySelector(".participants-section");
+        if (details.participants && details.participants.length) {
+          const ul = document.createElement("ul");
+          ul.className = "participants-list";
+
+          details.participants.forEach((p) => {
+            const li = document.createElement("li");
+
+            const span = document.createElement("span");
+            span.className = "participant-email";
+            span.textContent = p;
+
+            const btn = document.createElement("button");
+            btn.className = "remove-btn";
+            btn.setAttribute("aria-label", `Remover ${p}`);
+            btn.textContent = "✖";
+
+            // Attach click handler to unsubscribe
+            btn.addEventListener("click", async () => {
+              // Optimistic UI: disable button while request is in-flight
+              btn.disabled = true;
+              try {
+                const res = await fetch(
+                  `/activities/${encodeURIComponent(name)}/unsubscribe?email=${encodeURIComponent(p)}`,
+                  { method: "POST" }
+                );
+
+                const result = await res.json();
+                if (res.ok) {
+                  // Refresh activities to keep UI consistent (simpler than manual DOM updates)
+                  fetchActivities();
+                } else {
+                  console.error("Failed to unsubscribe:", result);
+                  messageDiv.textContent = result.detail || "Falha ao descadastrar participante";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                  setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+                  btn.disabled = false;
+                }
+              } catch (err) {
+                console.error("Error unsubscribing:", err);
+                messageDiv.textContent = "Erro ao descadastrar. Tente novamente.";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+                setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+                btn.disabled = false;
+              }
+            });
+
+            li.appendChild(span);
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+
+          participantsSection.appendChild(ul);
+        } else {
+          const empty = document.createElement("p");
+          empty.className = "participants-empty";
+          empty.textContent = "Nenhum participante inscrito";
+          participantsSection.appendChild(empty);
+        }
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -74,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Atualiza a lista de atividades/participantes
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
